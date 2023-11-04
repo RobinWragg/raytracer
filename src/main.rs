@@ -17,6 +17,7 @@ struct Surface {
 }
 
 impl Surface {
+    // rwtodo i think I actually want to return the world pos of the intersection?
     fn intersection(&self, ray: &Ray) -> Option<f32> {
         // Project the sphere's position onto the ray direction
         let sphere_relative_pos = self.position - ray.position;
@@ -45,8 +46,10 @@ fn trace_ray(ray: &Ray, surfaces: Vec<Surface>) -> f32 {
     for surface in surfaces.iter() {
         // rwtodo skip the originating surface of the ray. how about having a Surface reference in the Ray struct?
         if let Some(intersection_distance) = surface.intersection(ray) {
-            closest_intersecting_surface_distance = intersection_distance;
-            closest_intersecting_surface = Some(surface);
+            if intersection_distance < closest_intersecting_surface_distance {
+                closest_intersecting_surface_distance = intersection_distance;
+                closest_intersecting_surface = Some(surface);
+            }
         }
     }
 
