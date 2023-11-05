@@ -1,6 +1,7 @@
 // rwtodo "Rng" here is a trait. What is a trait? is "Write" a trait?
 use glam::Vec3;
 use rand::Rng; // Specified in the toml as "0.8.0", so it currently jumps to "0.8.5" put will never choose "0.9.0"
+use show_image::{create_window, ImageInfo, ImageView};
 use std::{f32::INFINITY, vec::Vec};
 
 // rwtodo can I put this declaration inside Surface?
@@ -38,7 +39,7 @@ struct Ray {
     position: Vec3,
 }
 
-fn trace_ray(ray: &Ray, surfaces: Vec<Surface>) -> f32 {
+fn trace_ray(ray: &Ray, surfaces: &Vec<Surface>) -> f32 {
     // rwtodo I could combine these into an Option<struct> but I need to understand lifetime specifiers first.
     let mut closest_intersecting_surface_distance: f32 = INFINITY;
     let mut closest_intersecting_surface: Option<&Surface> = None;
@@ -58,30 +59,69 @@ fn trace_ray(ray: &Ray, surfaces: Vec<Surface>) -> f32 {
         match surface.reflectivity {
             SurfaceReflectivity::Light => 1.0,
             SurfaceReflectivity::Rough => {
-                42.0 // rwtodo spawn a random ray in the hemisphere of the surface normal.
-                     // rwtodo spawn multiple rays.
+                let ray = Ray {
+                    direction: Vec3::new(
+                        // rwtodo based on surface normal
+                        rand::random::<f32>() - 0.5,
+                        rand::random::<f32>() - 0.5,
+                        rand::random::<f32>() - 0.5,
+                    )
+                    .normalize_or_zero(),
+                    position: Vec3::new(0.0, 0.0, 0.0), // rwtodo position of intersection
+                };
+                trace_ray(&ray, surfaces) // rwtodo spawn a random ray in the hemisphere of the surface normal.
+                                          // rwtodo spawn multiple rays.
             }
         }
     } else {
-        INFINITY
+        0.1 // rwtodo 0.0
     }
 }
 
+#[show_image::main]
 fn main() {
     println!("begin");
-    let surfaces = vec![Surface {
-        position: Vec3::new(0.0, 0.0, 10.0),
-        radius: 1.0,
-        reflectivity: SurfaceReflectivity::Light,
-    }];
+    let surfaces = vec![
+        Surface {
+            position: Vec3::new(-20.0, 10.0, 10.0),
+            radius: 10.0,
+            reflectivity: SurfaceReflectivity::Light,
+        },
+        Surface {
+            position: Vec3::new(20.0, -10.0, 10.0),
+            radius: 10.0,
+            reflectivity: SurfaceReflectivity::Rough,
+        },
+    ];
 
-    let first_ray = Ray {
-        direction: Vec3::new(0.0, 0.0, 1.0),
-        position: Vec3::new(0.0, 0.0, 0.0),
-    };
+    let mut pixel_data = Vec::new();
 
-    let intensity = trace_ray(&first_ray, surfaces);
-    println!("intensity: {}", intensity);
+    let width = 64;
+    let height = 64;
+
+    for y in 0..height {
+        for x in 0..width {
+            let ray = Ray {
+                direction: Vec3::new(0.0, 0.0, 1.0),
+                position: Vec3::new(
+                    x as f32 - ((width as f32) / 2.0),
+                    -(y as f32) + ((height as f32) / 2.0),
+                    0.0,
+                ),
+            };
+            let intensity = trace_ray(&ray, &surfaces);
+            pixel_data.push((intensity * 255.0) as u8);
+        }
+    }
+
+    let image = ImageView::new(ImageInfo::mono8(width, height), &pixel_data);
+    let window = create_window("image", Default::default()).expect("Couldn't create window");
+    window
+        .set_image("image-001", image)
+        .expect("Couldn't set image");
+
+    std::thread::sleep(std::time::Duration::new(2, 0));
+
     println!("end");
 }
 
