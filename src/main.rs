@@ -60,13 +60,7 @@ fn trace_ray(ray: &Ray, surfaces: &Vec<Surface>) -> f32 {
             SurfaceReflectivity::Light => 1.0,
             SurfaceReflectivity::Rough => {
                 let ray = Ray {
-                    direction: Vec3::new(
-                        // rwtodo based on surface normal
-                        rand::random::<f32>() - 0.5,
-                        rand::random::<f32>() - 0.5,
-                        rand::random::<f32>() - 0.5,
-                    )
-                    .normalize_or_zero(),
+                    direction: random_normalized(),
                     position: Vec3::new(0.0, 0.0, 0.0), // rwtodo position of intersection
                 };
                 trace_ray(&ray, surfaces) // rwtodo spawn a random ray in the hemisphere of the surface normal.
@@ -75,6 +69,23 @@ fn trace_ray(ray: &Ray, surfaces: &Vec<Surface>) -> f32 {
         }
     } else {
         0.1 // rwtodo 0.0
+    }
+}
+
+// rwtodo make hemisphere style
+fn random_normalized() -> Vec3 {
+    // rwtodo I'm not fond of this brute force approach
+    loop {
+        let mut v = Vec3::new(
+            rand::random::<f32>() * 2.0 - 1.0,
+            rand::random::<f32>() * 2.0 - 1.0,
+            rand::random::<f32>() * 2.0 - 1.0,
+        );
+
+        let len = v.length();
+        if len > 0.001 && len < 1.0 {
+            return v.normalize(); // rwtodo can't do the shorthand return here and I don't know why
+        }
     }
 }
 
