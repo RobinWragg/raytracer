@@ -1,6 +1,5 @@
 // rwtodo "Rng" here is a trait. What is a trait? is "Write" a trait?
 use glam::Vec3;
-use rand::Rng; // Specified in the toml as "0.8.0", so it currently jumps to "0.8.5" put will never choose "0.9.0"
 use show_image::{create_window, ImageInfo, ImageView};
 use std::vec::Vec;
 
@@ -50,7 +49,7 @@ struct Ray {
     originating_surface: usize,
 }
 
-fn trace_ray(ray: &Ray, surfaces: &Vec<Surface>) -> f32 {
+fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
     // rwtodo I could combine these into an Option<struct> but I need to understand lifetime specifiers first.
     let mut closest_intersection = Vec3::ZERO;
     let mut closest_intersecting_surface: Option<usize> = None;
@@ -72,11 +71,11 @@ fn trace_ray(ray: &Ray, surfaces: &Vec<Surface>) -> f32 {
     // Spawn ray(s) at the nearest surface
     if let Some(s) = closest_intersecting_surface {
         match surfaces[s].reflectivity {
-            SurfaceReflectivity::Light => 1.0,
+            SurfaceReflectivity::Light => 2.0,
             SurfaceReflectivity::Rough => {
                 let normal = (closest_intersection - surfaces[s].position).normalize(); // rwtodo refactor this into the Surface struct
                 let mut sum = 0.0;
-                for n in 0..1000 {
+                for _n in 0..1000 {
                     let mut r = random_normalized();
                     if r.dot(normal) < 0.0 {
                         r *= -1.0;
@@ -135,9 +134,10 @@ fn main() {
     let width = 64;
     let height = 64;
 
+    let mut starting_rays: Vec<Ray> = Vec::new();
     for y in 0..height {
         for x in 0..width {
-            let ray = Ray {
+            starting_rays.push(Ray {
                 direction: Vec3::new(0.0, 0.0, 1.0),
                 position: Vec3::new(
                     x as f32 - ((width as f32) / 2.0),
@@ -145,10 +145,13 @@ fn main() {
                     0.0,
                 ),
                 originating_surface: 1000000000,
-            };
-            let intensity = trace_ray(&ray, &surfaces);
-            pixel_data.push((intensity * 255.0) as u8);
+            });
         }
+    }
+
+    for starting_ray in starting_rays {
+        let intensity = trace_ray(&starting_ray, &surfaces);
+        pixel_data.push((intensity * 255.0) as u8);
     }
 
     let image = ImageView::new(ImageInfo::mono8(width, height), &pixel_data);
@@ -157,7 +160,7 @@ fn main() {
         .set_image("image-001", image)
         .expect("Couldn't set image");
 
-    std::thread::sleep(std::time::Duration::new(50, 0));
+    std::thread::sleep(std::time::Duration::new(2, 0));
 
     println!("end");
 }
