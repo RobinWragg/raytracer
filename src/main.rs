@@ -1,5 +1,6 @@
 // rwtodo "Rng" here is a trait. What is a trait? is "Write" a trait?
 use glam::Vec3;
+use rand::Rng;
 use show_image::{create_window, ImageInfo, ImageView};
 use std::vec::Vec;
 
@@ -76,7 +77,7 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
                 let normal = (closest_intersection - surfaces[s].position).normalize(); // rwtodo refactor this into the Surface struct
                 let mut sum = 0.0;
                 for _n in 0..1000 {
-                    let mut r = random_normalized();
+                    let mut r = random_point_on_sphere(); // rwtodo use random_point_on_sphere_2
                     if r.dot(normal) < 0.0 {
                         r *= -1.0;
                     }
@@ -97,7 +98,7 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
 }
 
 // rwtodo make hemisphere style
-fn random_normalized() -> Vec3 {
+fn random_point_on_sphere() -> Vec3 {
     // rwtodo I'm not fond of this brute force approach
     loop {
         let v = Vec3::new(
@@ -111,6 +112,22 @@ fn random_normalized() -> Vec3 {
             return v.normalize(); // rwtodo can't do the shorthand return here and I don't know why
         }
     }
+}
+
+fn random_point_on_sphere_2(normal: Vec3) -> Vec3 {
+    let mut rng = rand::thread_rng();
+
+    // Generate two random numbers for spherical coordinates
+    let theta = rng.gen_range(0.0..std::f32::consts::TAU);
+    let phi = rng.gen_range(0.0..std::f32::consts::PI);
+
+    // Calculate the Cartesian coordinates
+    let x = phi.sin() * theta.cos();
+    let y = phi.sin() * theta.sin();
+    let z = phi.cos();
+
+    // Create a Vec3 from the Cartesian coordinates
+    Vec3::new(x, y, z)
 }
 
 #[show_image::main]
