@@ -114,7 +114,7 @@ fn random_point_on_sphere() -> Vec3 {
     }
 }
 
-fn random_point_on_sphere_2(normal: Vec3) -> Vec3 {
+fn random_point_on_sphere_2() -> Vec3 {
     let mut rng = rand::thread_rng();
 
     // Generate two random numbers for spherical coordinates
