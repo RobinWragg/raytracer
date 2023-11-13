@@ -76,7 +76,7 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
             SurfaceReflectivity::Rough => {
                 let normal = (closest_intersection - surfaces[s].position).normalize(); // rwtodo refactor this into the Surface struct
                 let mut sum = 0.0;
-                for _n in 0..1000 {
+                for _n in 0..100 {
                     let mut r = random_point_on_sphere(); // rwtodo use random_point_on_sphere_2
                     if r.dot(normal) < 0.0 {
                         r *= -1.0;
@@ -89,7 +89,7 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
                     sum += trace_ray(&ray, surfaces); // rwtodo spawn a random ray in the hemisphere of the surface normal.
                                                       // rwtodo spawn multiple rays.
                 }
-                sum / 500.0
+                sum / 50.0
             }
         }
     } else {
