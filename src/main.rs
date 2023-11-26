@@ -76,7 +76,7 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
             SurfaceReflectivity::Rough => {
                 let normal = (closest_intersection - surfaces[s].position).normalize(); // rwtodo refactor this into the Surface struct
                 let mut sum = 0.0;
-                for _n in 0..100 {
+                for _n in 0..50 {
                     let mut r = random_point_on_sphere(); // rwtodo use random_point_on_sphere_2
                     if r.dot(normal) < 0.0 {
                         r *= -1.0;
@@ -133,6 +133,7 @@ fn random_point_on_sphere_2() -> Vec3 {
 #[show_image::main]
 fn main() {
     println!("begin");
+    let window = create_window("image", Default::default()).expect("Couldn't create window");
     let surfaces = vec![
         Surface {
             position: Vec3::new(10.0, -10.0, 30.0),
@@ -146,38 +147,37 @@ fn main() {
         },
     ];
 
-    let mut pixel_data = Vec::new();
+    for i in 0..100 {
+        let mut pixel_data = Vec::new();
 
-    let width = 64;
-    let height = 64;
+        let width = 64;
+        let height = 64;
 
-    let mut starting_rays: Vec<Ray> = Vec::new();
-    for y in 0..height {
-        for x in 0..width {
-            starting_rays.push(Ray {
-                direction: Vec3::new(0.0, 0.0, 1.0),
-                position: Vec3::new(
-                    x as f32 - ((width as f32) / 2.0),
-                    -(y as f32) + ((height as f32) / 2.0),
-                    0.0,
-                ),
-                originating_surface: 1000000000,
-            });
+        let mut starting_rays: Vec<Ray> = Vec::new();
+        for y in 0..height {
+            for x in 0..width {
+                starting_rays.push(Ray {
+                    direction: Vec3::new(0.0, 0.0, 1.0),
+                    position: Vec3::new(
+                        x as f32 - ((width as f32) / 2.0),
+                        -(y as f32) + ((height as f32) / 2.0),
+                        0.0,
+                    ),
+                    originating_surface: 1000000000,
+                });
+            }
         }
+
+        for starting_ray in starting_rays {
+            let intensity = trace_ray(&starting_ray, &surfaces);
+            pixel_data.push((intensity * 255.0) as u8);
+        }
+
+        let image = ImageView::new(ImageInfo::mono8(width, height), &pixel_data);
+        window
+            .set_image("image-001", image)
+            .expect("Couldn't set image");
     }
-
-    for starting_ray in starting_rays {
-        let intensity = trace_ray(&starting_ray, &surfaces);
-        pixel_data.push((intensity * 255.0) as u8);
-    }
-
-    let image = ImageView::new(ImageInfo::mono8(width, height), &pixel_data);
-    let window = create_window("image", Default::default()).expect("Couldn't create window");
-    window
-        .set_image("image-001", image)
-        .expect("Couldn't set image");
-
-    std::thread::sleep(std::time::Duration::new(2, 0));
 
     println!("end");
 }
