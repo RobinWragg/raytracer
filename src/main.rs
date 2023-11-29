@@ -4,6 +4,9 @@ use rand::Rng;
 use show_image::{create_window, ImageInfo, ImageView};
 use std::vec::Vec;
 
+const WIDTH: usize = 64;
+const HEIGHT: usize = 64;
+
 // rwtodo can I put this declaration inside Surface?
 enum SurfaceReflectivity {
     Light,
@@ -147,33 +150,27 @@ fn main() {
         },
     ];
 
-    for i in 0..100 {
-        let mut pixel_data = Vec::new();
+    for _ in 0..10 {
+        let mut pixel_data: [u8; WIDTH * HEIGHT] = [0; WIDTH * HEIGHT];
 
-        let width = 64;
-        let height = 64;
-
-        let mut starting_rays: Vec<Ray> = Vec::new();
-        for y in 0..height {
-            for x in 0..width {
-                starting_rays.push(Ray {
+        for y in 0..HEIGHT {
+            for x in 0..WIDTH {
+                let starting_ray = Ray {
                     direction: Vec3::new(0.0, 0.0, 1.0),
                     position: Vec3::new(
-                        x as f32 - ((width as f32) / 2.0),
-                        -(y as f32) + ((height as f32) / 2.0),
+                        x as f32 - ((WIDTH as f32) / 2.0),
+                        -(y as f32) + ((HEIGHT as f32) / 2.0),
                         0.0,
                     ),
                     originating_surface: 1000000000,
-                });
+                };
+
+                let intensity = trace_ray(&starting_ray, &surfaces);
+                pixel_data[x + y * WIDTH] = (intensity * 255.0) as u8;
             }
         }
 
-        for starting_ray in starting_rays {
-            let intensity = trace_ray(&starting_ray, &surfaces);
-            pixel_data.push((intensity * 255.0) as u8);
-        }
-
-        let image = ImageView::new(ImageInfo::mono8(width, height), &pixel_data);
+        let image = ImageView::new(ImageInfo::mono8(WIDTH as u32, HEIGHT as u32), &pixel_data);
         window
             .set_image("image-001", image)
             .expect("Couldn't set image");
