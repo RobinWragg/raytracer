@@ -2,7 +2,7 @@
 use glam::Vec3;
 use rand::Rng;
 use show_image::{create_window, ImageInfo, ImageView};
-use std::vec::Vec;
+use std::time::SystemTime;
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 64;
@@ -79,20 +79,26 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
             SurfaceReflectivity::Rough => {
                 let normal = (closest_intersection - surfaces[s].position).normalize(); // rwtodo refactor this into the Surface struct
                 let mut sum = 0.0;
-                for _n in 0..50 {
-                    let mut r = random_point_on_sphere(); // rwtodo use random_point_on_sphere_2
+
+                let new_rays_count = 100;
+
+                for _n in 0..new_rays_count {
+                    // Get a random point on the hemisphere of the normal
+                    let mut r = random_point_on_sphere();
                     if r.dot(normal) < 0.0 {
                         r *= -1.0;
                     }
+
                     let ray = Ray {
                         direction: r,
                         position: closest_intersection,
                         originating_surface: s,
                     };
-                    sum += trace_ray(&ray, surfaces); // rwtodo spawn a random ray in the hemisphere of the surface normal.
-                                                      // rwtodo spawn multiple rays.
+
+                    sum += trace_ray(&ray, surfaces);
                 }
-                sum / 50.0
+
+                sum / (new_rays_count as f32)
             }
         }
     } else {
@@ -100,24 +106,7 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
     }
 }
 
-// rwtodo make hemisphere style
 fn random_point_on_sphere() -> Vec3 {
-    // rwtodo I'm not fond of this brute force approach
-    loop {
-        let v = Vec3::new(
-            rand::random::<f32>() * 2.0 - 1.0,
-            rand::random::<f32>() * 2.0 - 1.0,
-            rand::random::<f32>() * 2.0 - 1.0,
-        );
-
-        let len = v.length();
-        if len > 0.001 && len < 1.0 {
-            return v.normalize(); // rwtodo can't do the shorthand return here and I don't know why
-        }
-    }
-}
-
-fn random_point_on_sphere_2() -> Vec3 {
     let mut rng = rand::thread_rng();
 
     // Generate two random numbers for spherical coordinates
@@ -150,9 +139,11 @@ fn main() {
         },
     ];
 
-    for _ in 0..10 {
+    let now = SystemTime::now();
+    for _ in 0..100 {
         let mut pixel_data: [u8; WIDTH * HEIGHT] = [0; WIDTH * HEIGHT];
 
+        // rwtodo I want to parallelize this, but first I want to minimize the random calls.
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
                 let starting_ray = Ray {
@@ -177,6 +168,10 @@ fn main() {
     }
 
     println!("end");
+
+    if let Ok(elapsed) = now.elapsed() {
+        println!("{:.2} seconds", elapsed.as_secs_f32());
+    }
 }
 
 // rwtodo learn the ins and outs of specifying crate versions. e.g. rand
