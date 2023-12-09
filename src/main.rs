@@ -1,4 +1,3 @@
-// rwtodo "Rng" here is a trait. What is a trait? is "Write" a trait?
 use glam::Vec3;
 use rand::Rng;
 use show_image::{create_window, ImageInfo, ImageView};
@@ -6,6 +5,7 @@ use std::time::SystemTime;
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 64;
+const MAX_RAYS_PER_BOUNCE: usize = 100;
 
 // rwtodo can I put this declaration inside Surface?
 enum SurfaceReflectivity {
@@ -53,7 +53,7 @@ struct Ray {
     originating_surface: usize,
 }
 
-fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
+fn trace_ray(ray: &Ray, surfaces: &[Surface], random_points: &[Vec3]) -> f32 {
     // rwtodo I could combine these into an Option<struct> but I need to understand lifetime specifiers first.
     let mut closest_intersection = Vec3::ZERO;
     let mut closest_intersecting_surface: Option<usize> = None;
@@ -80,11 +80,9 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
                 let normal = (closest_intersection - surfaces[s].position).normalize(); // rwtodo refactor this into the Surface struct
                 let mut sum = 0.0;
 
-                let new_rays_count = 100;
-
-                for _n in 0..new_rays_count {
+                for n in 0..MAX_RAYS_PER_BOUNCE {
                     // Get a random point on the hemisphere of the normal
-                    let mut r = random_point_on_sphere();
+                    let mut r = random_points[n];
                     if r.dot(normal) < 0.0 {
                         r *= -1.0;
                     }
@@ -95,10 +93,10 @@ fn trace_ray(ray: &Ray, surfaces: &[Surface]) -> f32 {
                         originating_surface: s,
                     };
 
-                    sum += trace_ray(&ray, surfaces);
+                    sum += trace_ray(&ray, surfaces, random_points);
                 }
 
-                sum / (new_rays_count as f32)
+                sum / (MAX_RAYS_PER_BOUNCE as f32)
             }
         }
     } else {
@@ -139,9 +137,15 @@ fn main() {
         },
     ];
 
+    let mut random_points: [Vec3; MAX_RAYS_PER_BOUNCE] = [Vec3::ZERO; MAX_RAYS_PER_BOUNCE];
+
     let now = SystemTime::now();
     for _ in 0..100 {
         let mut pixel_data: [u8; WIDTH * HEIGHT] = [0; WIDTH * HEIGHT];
+
+        for point in &mut random_points {
+            *point = random_point_on_sphere();
+        }
 
         // rwtodo I want to parallelize this, but first I want to minimize the random calls.
         for y in 0..HEIGHT {
@@ -153,10 +157,10 @@ fn main() {
                         -(y as f32) + ((HEIGHT as f32) / 2.0),
                         0.0,
                     ),
-                    originating_surface: 1000000000,
+                    originating_surface: 1000000000, // rwtodo probably use an Option instead of this big number
                 };
 
-                let intensity = trace_ray(&starting_ray, &surfaces);
+                let intensity = trace_ray(&starting_ray, &surfaces, &random_points);
                 pixel_data[x + y * WIDTH] = (intensity * 255.0) as u8;
             }
         }
